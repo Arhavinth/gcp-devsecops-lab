@@ -25,3 +25,11 @@ jobs:
       - name: Validate Kubernetes manifests
         run: |
           kubeconform -strict -summary k8s/
+
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@0.28.1
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
