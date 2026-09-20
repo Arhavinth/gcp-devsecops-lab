@@ -1,4 +1,4 @@
-name: CI - Validate Kubernetes
+name: CI - Build and Scan
 
 on:
   push:
@@ -8,8 +8,12 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  validate-k8s:
+  build-and-scan:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,10 +30,28 @@ jobs:
         run: |
           kubeconform -strict -summary k8s/
 
-      - name: Run Trivy security scan
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/arhavinth/devsecops-app:${{ github.sha }} \
+            -t ghcr.io/arhavinth/devsecops-app:latest \
+            .
+
+      - name: Run Trivy image scan
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          scan-type: fs
-          scan-ref: .
+          image-ref: ghcr.io/arhavinth/devsecops-app:${{ github.sha }}
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/arhavinth/devsecops-app:${{ github.sha }}
+          docker push ghcr.io/arhavinth/devsecops-app:latest
