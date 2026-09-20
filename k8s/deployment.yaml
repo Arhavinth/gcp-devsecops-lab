@@ -14,8 +14,10 @@ spec:
       labels:
         app: devsecops-app
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       containers:
         - name: nginx
-          image: devsecops-app:local
+          image: ghcr.io/arhavinth/devsecops-app:latest
           ports:
             - containerPort: 80
